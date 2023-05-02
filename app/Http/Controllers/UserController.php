@@ -5,26 +5,12 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use App\Notifications\UserRegisteredNotification;
 
 class UserController extends Controller
 {
     // METHODE POUR INSCRIRE UN UTILISATEUR
     public function register(Request $request){
-        // // Valider les données utilisateurs
-        // $userData = $request ->validate([
-        //     "name" => ["required","string","min:2","max:100"],
-        //     "email" => ["required","email", "unique:users,email"],
-        //     "password" => ["required","string", "min:8","max:100","confirmed"]
-        // ]);
-
-        //  // Créer un nouvel utilisateur
-        // $users = User::create([
-        //   "name" => $userData["name"],
-        //   "email" => $userData["email"],
-        //   "password" => bcrypt($userData["password"]),
-        // ]);
-
-        //  return response($users,201);
 
         // Valider les données utilisateurs
         $userData = $request ->validate([
@@ -46,6 +32,9 @@ class UserController extends Controller
             ]);
 
             DB::commit();
+            // Envoyez l'e-mail de confirmation
+          $users->notify(new UserRegisteredNotification($users));
+
             return response($users,201);
 
         } catch (\Exception $e) {
@@ -81,4 +70,36 @@ class UserController extends Controller
             $users = User::all();
             return response($users, 200);
         }
+
+               // METHODE POUR DECONNEXION DES UTILISATEURS
+               public function logOut()
+               {
+                   $user = auth()->user();
+                    if ($user) {
+                    $user->tokens->each(function ($token, $key) {
+                    $token->delete();
+                    });
+                    }
+                   return response(["message"=>"Vous etes deconnecté !"],200);
+               }
+              
+               // METHODE POUR SUPPRIMER COMPTE UTILISATEURS
+               public function deleteAccount(Request $request){
+                $user = $request->user();
+            
+                DB::beginTransaction();
+                try {
+                    // Supprimer l'utilisateur et tous ses tokens
+                    $user->tokens()->delete();
+                    $user->delete();
+            
+                    DB::commit();
+                    return response(['message' => 'Compte utilisateur supprimé avec succès.'], 200);
+            
+                } catch (\Exception $e) {
+                    DB::rollback();
+                    return response(['message' => 'Une erreur s\'est produite lors de la suppression du compte utilisateur.'], 500);
+                }
+            }
+            
 }

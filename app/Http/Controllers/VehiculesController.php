@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Vehicules;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class VehiculesController extends Controller
 {
@@ -45,42 +46,44 @@ class VehiculesController extends Controller
     /**********ENREGISTRER LES VEHICULES DANS LA BASE DE DONNEES************** */
     public function store(Request $request)
     {
-        // Valider les données du véhicule
-        $carsValidation = $request->validate([
-            'marque' => ['string'],
-            'modele' => ['required', 'string'],
-            'prix' => ['required', 'numeric'],
-            'description' => ['string', 'min:5', 'max:255'],
-            'user_id' => ['required', 'numeric']
+        // Validation des données du véhicules
+        $validatedData = $request->validate([
+            'marque' => 'string',
+            'modele' => 'required|string',
+            'prix' => 'required|numeric',
+            'description' => 'string|min:5|max:255',
+            'image' => 'required|mimes:png,jpeg,jpg,svg|max:4096',
+            'user_id' => 'required|numeric'
         ]);
-            // Vérifier si le véhicule existe déjà
-            $existingCar = Vehicules::where([
-                'marque' => $carsValidation['marque'],
-                'modele' => $carsValidation['modele'],
-                'prix' => $carsValidation['prix'],
-                'description' => $carsValidation['description'],
-                'user_id' => $carsValidation['user_id']
-            ])->first();
+       // Vérifier si le véhicule existe
+        $existingCar = Vehicules::where([
+            'marque' => $validatedData['marque'],
+            'modele' => $validatedData['modele'],
+            'prix' => $validatedData['prix'],
+            'description' => $validatedData['description'],
+            'user_id' => $validatedData['user_id']
+        ])->first();
+     // Si le véhicule existe déjà, renvoyer une réponse d'erreur
+        if ($existingCar) {
+            return response(['message' => 'Ce véhicule existe déjà.'], 409);
+        }
+        // Stocker limage dans "public/images"
+        $path = $request->file('image')->storePublicly('images', 'public');
 
-            // Si le véhicule existe déjà, renvoyer une réponse d'erreur
-            if ($existingCar) {
-                return response(['message' => 'Ce véhicule existe déjà.'], 409);
-            }
-           // Créer un nouveau véhicule en utilisant les données validées
-            $car = new Vehicules($carsValidation);
-            $car->save();
-
-        // // Créer un nouvel véhicule
-        // $cars = Vehicules::create([
-        //     'marque' => $carsValidation['marque'],
-        //     'modele' => $carsValidation['modele'],
-        //     'email' => $carsValidation['prix'],
-        //     'description' => $carsValidation['description'],
-        //     'user_id' => $carsValidation['user_id']
-        // ]);
-
+         // Créer un nouveau répertoire si "public/images" n'existe pas déjà
+        if (!Storage::disk('public')->exists('images')) {
+            Storage::disk('public')->makeDirectory('images');
+        }
+    
+        // Créer un nouveau véhicule en utilisant les données validées
+        $car = new Vehicules($validatedData);
+        $car->image = $path;
+        $car->save();
+    
         return response(['message' => 'Véhicule ajouté avec succès !']);
     }
+    
+    
 
     /**
      * Display the specified resource.

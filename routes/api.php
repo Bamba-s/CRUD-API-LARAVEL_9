@@ -20,16 +20,36 @@ Route::get('/', function(){
 });
  
 //ROUTES UTILISATEURS
- Route::post("/user/register", [UserController::class, "register"]);
+/* Route::post("/user/register", [UserController::class, "register"]);
  Route::post("/user/login", [UserController::class, "login"]);
  Route::get("/user/listUsers", [UserController::class, "listUsers"]);
+ Route::post("/user/logout", [UserController::class, "logOut"]);*/
 
  //ROUTES VEHICULES
- Route::get('cars', [VehiculesController::class,"index"]);
+/* Route::get('cars', [VehiculesController::class,"index"]);
  Route::post('cars/new', [VehiculesController::class,"store"]);
  Route::get('cars/show/{id}', [VehiculesController::class,"show"]);
  Route::put('cars/edit/{id}', [VehiculesController::class,"update"]);
- Route::delete('cars/delete/{id}', [VehiculesController::class,"destroy"]);
+ Route::delete('cars/delete/{id}', [VehiculesController::class,"destroy"]);*/
+
+ //ROUTES UTILISATEURS
+Route::post("/user/register", [UserController::class, "register"]);
+Route::post("/user/login", [UserController::class, "login"]);
+
+Route::middleware('auth:sanctum')->group(function () {
+Route::get("/user/listUsers", [UserController::class, "listUsers"]);
+Route::post("/user/logout", [UserController::class, "logOut"]);
+Route::delete("/user/deleteAccount", [UserController::class, "deleteAccount"]);
+});
+
+ //ROUTES VEHICULES
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('cars', [VehiculesController::class,"index"]);
+    Route::post('cars/new', [VehiculesController::class,"store"]);
+    Route::get('cars/show/{id}', [VehiculesController::class,"show"]);
+    Route::put('cars/edit/{id}', [VehiculesController::class,"update"]);
+    Route::delete('cars/delete/{id}', [VehiculesController::class,"destroy"]);
+    });
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();

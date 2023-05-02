@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('modele');
             $table->decimal('prix',10,2,true)->default(0.0);//Prix avec max 10 chiffres entiers, 2 decimaux et positif(true)
             $table->text('description');
+            $table->string('image')->nullable(false);
             $table->unsignedBigInteger('user_id')->nullable(false);
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->timestamps();
